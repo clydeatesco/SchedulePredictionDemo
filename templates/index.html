@@ -6,15 +6,33 @@
 		<div class="main">
 		<h1>Schedule Prediction</h1>
 
-		<form action="{{ url_for('predict')}}" method="post">
-			<input type="text" name="account" placeholder="Account" required="required"/>
-			<input type="text" name="branch" placeholder="Branch" required="required"/>
-			<input type="text" name="units" placeholder="Units" required="required"/>			
+<pre>
+Example:
 
+Account (Label Encoding): 124
+Account (Data Source): 
+ - CDC Facilities Mgt ltd, The Stables, 2 Wassel Grove Lane, Hagley, Stourbridge DY9 9JH
+ - United Kingdom
+ - Justin Donoghue
+ - justin@cdc-fm.co.uk
+
+Branch (Label Encoding): 3
+Branch (Data Source):
+ - Esco Micro Pte Ltd 21 Changi South Street 1 486777
+ - Singapore
+
+Units (Label Encoding): 2
+Units (Data Source): 2 units
+
+</pre>
+
+		<form action="{{ url_for('predict')}}" method="post">
+			Account: <input type="text" name="account" placeholder="124" required="required"/><br/>
+			Branch: <input type="text" name="branch" placeholder="Branch" required="required"/><br/>
+			Units: <input type="text" name="units" placeholder="Units" required="required"/><br/>
 			<button type="submit" class="btn btn-primary btn-block btn-large">Predict</button>
 		</form>
 
-		<br>
 		<br>
 		
 		{{ prediction_text }}
@@ -22,8 +40,11 @@
 		{{ total_days }}
 		<br>
 		{{ total_hours }}
-		
+		<br>
+		<img src="raw.githubusercontent.com/clydeatesco/SchedulePredictionDemo/main/trial14.png" />
+
 		</div>
 	</body>
 </html>
 	
+
