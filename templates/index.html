@@ -25,14 +25,14 @@ Units (Label Encoding): 2
 Units (Data Source): 2 units
 
 </pre>
-
+<hr/>
 		<form action="{{ url_for('predict')}}" method="post">
 			Account: <input type="text" name="account" placeholder="124" required="required"/><br/>
-			Branch: <input type="text" name="branch" placeholder="Branch" required="required"/><br/>
-			Units: <input type="text" name="units" placeholder="Units" required="required"/><br/>
+			Branch: <input type="text" name="branch" placeholder="3" required="required"/><br/>
+			Units: <input type="text" name="units" placeholder="2" required="required"/><br/>
 			<button type="submit" class="btn btn-primary btn-block btn-large">Predict</button>
 		</form>
-
+<hr/>
 		<br>
 		
 		{{ prediction_text }}
@@ -41,10 +41,17 @@ Units (Data Source): 2 units
 		<br>
 		{{ total_hours }}
 		<br>
-		<img src="raw.githubusercontent.com/clydeatesco/SchedulePredictionDemo/main/trial14.png" />
+		<img src="https://raw.githubusercontent.com/clydeatesco/SchedulePredictionDemo/main/trial14.png" />
 
 		</div>
 	</body>
 </html>
 	
-
+<!--
+NANO Cheat Sheet
+=========================
+Ctrl + o   = Save Changes
+Ctrl + x   = Close File
+Ctrl + k   = Cut Text
+Ctrl + u   = Paste Text
+-->
