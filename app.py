@@ -7,7 +7,7 @@ model = pickle.load(open('model.pkl', 'rb'))
 
 @app.route('/')
 def home():
-	return render_template('index.html')
+	return render_template('main.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -22,7 +22,7 @@ def predict():
 	totaldays = 'Total Days: {}'.format(output[0])
 	totalhrs = 'Total Hours: {}'.format(output[1])
 
-	return render_template('index.html', prediction_text=html, total_days=totaldays, total_hours=totalhrs)
+	return render_template('main.html', prediction_text=html, total_days=totaldays, total_hours=totalhrs)
 
 if __name__ == "__main__":
 	app.run(debug=True)
