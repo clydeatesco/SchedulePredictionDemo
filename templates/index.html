@@ -3,7 +3,21 @@
 		<title>Service Scheduling</title>
 	</head>
 	<body>
-		<span> func is {{ func }} </span>
+		<form action="{{ url_for('schedule')}}" method="post">
+			Address 1: <input type="text" name="address1" placeholder="Zip Code" required="required"/><br/>
+			<button type="submit" class="btn btn-primary btn-block btn-large">Schedule</button>
+		</form>
+		
+		<span> func is  
+		{% block content %}
+		    {% if func|length %}
+		        {{ func }}
+		    {% else %}
+		        0
+		    {% endif %}
+		{% endblock content %}
+		</span>
+		
 	</body>
 </html>
 
