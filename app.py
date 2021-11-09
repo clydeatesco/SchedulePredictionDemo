@@ -9,6 +9,10 @@ model = pickle.load(open('model.pkl', 'rb'))
 def home():
 	return render_template('index.html')
 
+@app.route('/serviceduration')
+def home():
+	return render_template('prototype.html')
+
 @app.route('/main')
 def main():
 	return render_template('main.html')
