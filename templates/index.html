@@ -1,3 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Service Scheduling</title>
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+   integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+   crossorigin=""/>
+	<style type="text/css">
+		input[readonly] {background-color: lightgrey;}
+		textarea[readonly] {background-color: lightgrey;}
+		#map { height: 500px; }
+		table, th, td {border: 1px solid black;}
+		.row {display: flex;}
+		.columnleft {flex: 20%; padding: 20px; }
+		.columnright {flex: 80%; padding: 20px; }
+
+
+/**/
+* { box-sizing: border-box; }
+body {
+  font: 16px Arial;
+}
+.autocomplete {
+  /*the container must be positioned relative:*/
+  position: relative;
+  display: inline-block;
+}
+input {
+  border: 1px solid transparent;
+  background-color: #f1f1f1;
+  padding: 10px;
+  font-size: 16px;
+}
+input[type=text] {
+  background-color: #f1f1f1;
+  width: 100%;
+}
+#btnadd {
+	  border: 1px solid transparent;
+  background-color: #f1f1f1;
+  padding: 10px;
+  font-size: 16px;
+  background-color: DodgerBlue;
+  color: #fff;
+
+}
+.autocomplete-items {
+  position: absolute;
+  border: 1px solid #d4d4d4;
+  border-bottom: none;
+  border-top: none;
+  z-index: 99;
+  /*position the autocomplete items to be the same width as the container:*/
+  top: 100%;
+  left: 0;
+  right: 0;
+}
+.autocomplete-items div {
+  padding: 10px;
+  cursor: pointer;
+  background-color: #fff;
+  border-bottom: 1px solid #d4d4d4;
+}
+.autocomplete-items div:hover {
+  /*when hovering an item:*/
+  background-color: #e9e9e9;
+}
+.autocomplete-active {
+  /*when navigating through the items using the arrow keys:*/
+  background-color: DodgerBlue !important;
+  color: #ffffff;
+}
+
+
+	</style>
+</head>
+<body>
+
+	<div id="map"></div>
+	<br>
+	<div class="row">
+		<div class="columnleft" style="background-color: #ddd">
+			<h4>Service Details</h4>
+			<table>
+				<tr>
+					<td>Customer Postal Code: </td>
+					<td><input type="text" name="sddestination" id="sddestination" placeholder="768923"></td>
+				</tr>
+				<tr>
+					<td>Service Name: </td>
+					<td class="autocomplete" style="width:300px;"><input id="myInput" type="text" name="sdunit" placeholder="Aircon"></td>					
+				</tr>
+				<tr>
+					<td colspan="2" align="right"><button style="width:100%;" id="btnadd" onclick="addservice()">Add Service</button></td>
+				</tr>
+			</table>
+
+		
+		</div>
+		<div class="columnright" style="background-color: #eee">
+			<h4>Service List (Source: HEADQUARTER, 21 CHANGI SOUTH STREET 1 SINGAPORE 486777)</h4>
+			<table id="servicelisttable"></table>
+		</div>
+	</div>
+
+	<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+	   integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+	   crossorigin=""></script>
+	<script type="text/javascript">
+
+		// VARIABLES
+		let mymap = L.map('map',{closePopupOnClick: false}).setView([1.351616,103.808053], 12);
+		let redIcon = new L.Icon({
+		  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+		  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+		  iconSize: [25, 41],
+		  iconAnchor: [12, 41],
+		  popupAnchor: [1, -34],
+		  shadowSize: [41, 41]
+		});
+		let services = [];	
+		let sequence = [];
+		main();
+		function main(){
+			viewmap();
+		}
+
+
+		function viewmap(){	
+			L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+    			attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+			    maxZoom: 18,
+			    id: 'mapbox/streets-v11',
+			    tileSize: 512,
+			    zoomOffset: -1,
+			    accessToken: 'pk.eyJ1IjoiY2x5ZGVhdGVzY28iLCJhIjoiY2t2bnF0Y2wzNnFtdjJ3bXNpZTl3Zng1dyJ9.TcYasJWvPcuDclZ8nN-VyA'
+			}).addTo(mymap);
+			
+			var marker = L.marker([1.33804355961438, 103.970832828467],{icon: redIcon}).addTo(mymap);
+			marker.bindPopup("<b>HEADQUARTER</b><br>escolifesciences").openPopup();
+		}
+
+		async function addservice(){
+			const dest = document.querySelector('#sddestination').value;
+			const servicename = document.querySelector('#myInput').value;
+			await fetch('https://developers.onemap.sg/commonapi/search?searchVal='+dest+'&returnGeom=Y&getAddrDetails=Y')
+				.then(response => response.json())
+				.then(data => {				
+					//console.log(data);
+					if(data.found == 1){
+						const address = data.results[0]['ADDRESS'];		
+						const long = data.results[0]['LONGITUDE'];	
+						const lat = data.results[0]['LATITUDE'];
+						services.push({
+							"address": address,
+							"longitude": long,
+							"latitude":lat,
+							"service":servicename,
+							"servicetime": '45 mins'
+							});				
+					}
+					else{
+						document.querySelector('#sddestination').value = "NO RESULTS FOUND";						
+					}
+				});	
+			await generateTable();
+			await updateMap();			
+			const sum = durations.reduce((accumulator,a)=>{return accumulator+a},0);
+			html += `<tfooter><tr><td colspan=5 style="text-align:right;"><b>TOTAL</b></td><td>${sum} mins</td></tr></tfooter>`;	
+			document.querySelector("#servicelisttable").innerHTML = html;
+
+		}
+		let table = [];
+		let durations = [];
+		let html = ``;
+		async function generateTable(){
+			// console.clear();
+			table=[];
+			durations=[];
+			sequence = [];
+			sequence.push({"lat":1.33804355961438,"long":103.970832828467});
+
+			let seq = 1;
+			await Promise.all(services.map(async (s) => {
+
+				table.push({
+					"seq":seq++,
+					"address":s.address,
+					"unit":s.service,
+					"servicetime": s.servicetime,
+					"traveltime": await computetraveltime(seq),
+					"duration": ""
+				})	
+
+				async function computetraveltime(seq){
+					let traveltime = 0;
+					// console.log(`push${seq-1}`);
+					sequence.push({"lat":s.latitude,"long":s.longitude});	
+					// console.log(`sequence size is ${sequence.length} and seq is ${seq}`);
+					let src = sequence[seq-2].lat+","+sequence[seq-2].long;
+					let dst = sequence[seq-1].lat+","+sequence[seq-1].long;
+					// console.log(`${seq-1} >> from ${src} to ${dst}`);
+					// html += `<td>${src}</td>`;
+					// html += `<td>${dst}</td>`;				
+
+					const proxyurl = "https://corsanywhere.herokuapp.com/";
+					const url = 'https://maps.googleapis.com/maps/api/distancematrix/json?origins='+src+'&destinations='+dst+'&key=AIzaSyAwUCVZYXQd8KbN5EcxxLC1UuM3naKt0X8';
+					let result = [];
+					await fetch(proxyurl+url)
+						.then((response) => response.json())
+						.then((data) => {					
+							traveltime = data.rows[0].elements[0].duration.text;
+						});
+					return traveltime;
+				}
+			}));
+
+
+			table.sort(function (a,b){
+				return a.seq - b.seq;
+			});
+			html = `<thead><tr>
+			<th>Sequence</th>
+			<th>Destination</th>
+			<th>Unit</th>
+			<th>Service Time</th>
+			<th>Travel Time</th>
+			<th>Duration</th>
+			</tr></thead><tbody>`;
+			await Promise.all(table.map(async (t) => {
+				html += '<tr>';
+				html += '<td style="text-align:center;">';
+				html += t.seq;
+				html += '</td>';
+				html += '<td>';
+				html += t.address;
+				html += '</td>';
+				html += '<td>'+t.unit+'</td>';
+				html += '<td>'+t.servicetime+'</td>';
+				html += `<td>${t.traveltime}</td>`;
+				html += `<td>${computeduration(t.servicetime,t.traveltime)} mins</td>`;
+				html += '</tr>';
+
+				function computeduration(st,tt){
+					const a = st.split(" ");
+					const b = tt.split(" ");
+					const duration = parseInt(a[0]) + parseInt(b[0]);
+					durations.push(duration);
+					return duration;
+				}
+			}));
+			html += '</tbody>'	
+			document.querySelector("#servicelisttable").innerHTML = html;
+		}
+
+		function updateMap(){
+			let seq = 1;
+			services.map(s => {
+				const marker = L.marker([s.latitude, s.longitude],{icon: redIcon}).addTo(mymap);
+				marker.bindPopup("<b>"+(seq)+"</b> - "+findtraveltime(seq++)).openPopup();
+
+				function findtraveltime(seq){
+					let traveltime = 0;
+					table.map(t=>{
+						if(t.seq == seq){
+							traveltime = t.traveltime;
+						}
+					});
+					return traveltime;
+				}
+			});
+		}		
+
+
+// 
+
+		//var units = ["Afghanistan","Albania","Algeria","Andorra","Angola","Anguilla","Antigua &amp; Barbuda","Argentina","Armenia","Aruba","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia","Bosnia &amp; Herzegovina","Botswana","Brazil","British Virgin Islands","Brunei","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Cape Verde","Cayman Islands","Central Arfrican Republic","Chad","Chile","China","Colombia","Congo","Cook Islands","Costa Rica","Cote D Ivoire","Croatia","Cuba","Curacao","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Ethiopia","Falkland Islands","Faroe Islands","Fiji","Finland","France","French Polynesia","French West Indies","Gabon","Gambia","Georgia","Germany","Ghana","Gibraltar","Greece","Greenland","Grenada","Guam","Guatemala","Guernsey","Guinea","Guinea Bissau","Guyana","Haiti","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Isle of Man","Israel","Italy","Jamaica","Japan","Jersey","Jordan","Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Macau","Macedonia","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Montserrat","Morocco","Mozambique","Myanmar","Namibia","Nauro","Nepal","Netherlands","Netherlands Antilles","New Caledonia","New Zealand","Nicaragua","Niger","Nigeria","North Korea","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Puerto Rico","Qatar","Reunion","Romania","Russia","Rwanda","Saint Pierre &amp; Miquelon","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","St Kitts &amp; Nevis","St Lucia","St Vincent","Sudan","Suriname","Swaziland","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor L'Este","Togo","Tonga","Trinidad &amp; Tobago","Tunisia","Turkey","Turkmenistan","Turks &amp; Caicos","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States of America","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Virgin Islands (US)","Yemen","Zambia","Zimbabwe"];
+		var units = ["Certification of Ducted Fume Hood","Certification of Laminar Air Flow Cabinet","Certification of Biological Safety Cabinet","Preventive Maintenance of Biological Safety Cabinet","Breakdown Call","Certification of Ductless Fume Hood","Decontamination of Biological Safety Cabinet","Installation and/or Parts Replacement","Certification of Pharma Equipment","Preventive Maintenance of Ducted Fume Hood","Ad-Hoc Services","General Service","Certification of Lab Freezers & Refrigerators","Validation of Airshower","Preventive Maintenance of Ductless Fume Hood","Certification of Cleanroom based on Class 5","6","7 & 8 as per ISO 14644-1:2015"," IES-RP-CC-002.2 and NEBB","Service Call","Replacement of Parts","Validation of ULT Freezers","Certification of C02 Incubators","Preventive Maintenance of Laminar Flow","Validation of CO2 Incubators","Certification of Animal Handling Workstation","Preventive Maintenance of Ultra Low Temperature Freezer"," Laboratory Freezer and/or Laboratory Refrigerator","Transportation of Cabinets","Shifting/Relocation","Decommissioning","IQOQ - Installation Qualification and Operational Qualification","New Cabinet-Install/Commission/Certification","Validation of Oven and/or Incubators","Fumigation Charge","Labour Charge","Validation of Downflow Booth","Preventive Maintenance of Animal Handling Workstations","Preventive Maintenance for Non-thermostatic Products","Certification of Cleanroom Products","Preventive Maintenance of CO2 Incubator","Preventive Maintenance of Airshower","Preventive Maintenance of Pharma Equipment (others)","Certification of PCR Cabinet","User Training","Testing and Commissioning","Dismantling/Disposal","Validation of Pass Boxes","Certification of Powder Containment Unit"];
+
+
+function autocomplete(inp, arr) {
+  /*the autocomplete function takes two arguments,
+  the text field element and an array of possible autocompleted values:*/
+  var currentFocus;
+  /*execute a function when someone writes in the text field:*/
+  inp.addEventListener("input", function(e) {
+      var a, b, i, val = this.value;
+      /*close any already open lists of autocompleted values*/
+      closeAllLists();
+      if (!val) { return false;}
+      currentFocus = -1;
+      /*create a DIV element that will contain the items (values):*/
+      a = document.createElement("DIV");
+      a.setAttribute("id", this.id + "autocomplete-list");
+      a.setAttribute("class", "autocomplete-items");
+      /*append the DIV element as a child of the autocomplete container:*/
+      this.parentNode.appendChild(a);
+      /*for each item in the array...*/
+      for (i = 0; i < arr.length; i++) {
+        /*check if the item starts with the same letters as the text field value:*/
+        if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+          /*create a DIV element for each matching element:*/
+          b = document.createElement("DIV");
+          /*make the matching letters bold:*/
+          b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+          b.innerHTML += arr[i].substr(val.length);
+          /*insert a input field that will hold the current array item's value:*/
+          b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+          /*execute a function when someone clicks on the item value (DIV element):*/
+              b.addEventListener("click", function(e) {
+              /*insert the value for the autocomplete text field:*/
+              inp.value = this.getElementsByTagName("input")[0].value;
+              /*close the list of autocompleted values,
+              (or any other open lists of autocompleted values:*/
+              closeAllLists();
+          });
+          a.appendChild(b);
+        }
+      }
+  });
+  /*execute a function presses a key on the keyboard:*/
+  inp.addEventListener("keydown", function(e) {
+      var x = document.getElementById(this.id + "autocomplete-list");
+      if (x) x = x.getElementsByTagName("div");
+      if (e.keyCode == 40) {
+        /*If the arrow DOWN key is pressed,
+        increase the currentFocus variable:*/
+        currentFocus++;
+        /*and and make the current item more visible:*/
+        addActive(x);
+      } else if (e.keyCode == 38) { //up
+        /*If the arrow UP key is pressed,
+        decrease the currentFocus variable:*/
+        currentFocus--;
+        /*and and make the current item more visible:*/
+        addActive(x);
+      } else if (e.keyCode == 13) {
+        /*If the ENTER key is pressed, prevent the form from being submitted,*/
+        e.preventDefault();
+        if (currentFocus > -1) {
+          /*and simulate a click on the "active" item:*/
+          if (x) x[currentFocus].click();
+        }
+      }
+  });
+  function addActive(x) {
+    /*a function to classify an item as "active":*/
+    if (!x) return false;
+    /*start by removing the "active" class on all items:*/
+    removeActive(x);
+    if (currentFocus >= x.length) currentFocus = 0;
+    if (currentFocus < 0) currentFocus = (x.length - 1);
+    /*add class "autocomplete-active":*/
+    x[currentFocus].classList.add("autocomplete-active");
+  }
+  function removeActive(x) {
+    /*a function to remove the "active" class from all autocomplete items:*/
+    for (var i = 0; i < x.length; i++) {
+      x[i].classList.remove("autocomplete-active");
+    }
+  }
+  function closeAllLists(elmnt) {
+    /*close all autocomplete lists in the document,
+    except the one passed as an argument:*/
+    var x = document.getElementsByClassName("autocomplete-items");
+    for (var i = 0; i < x.length; i++) {
+      if (elmnt != x[i] && elmnt != inp) {
+      x[i].parentNode.removeChild(x[i]);
+    }
+  }
+}
+/*execute a function when someone clicks in the document:*/
+document.addEventListener("click", function (e) {
+    closeAllLists(e.target);
+});
+}
+autocomplete(document.getElementById("myInput"), units);
+
+	</script>
+	</body>
+</html>
+<!-- 
+NOTE: 
+[/] Traveltime is the duration from point A to B
+[/] Duration is the estimated service time plus the traveltime
+[/] Unit and servicename were used interchangeably
+ -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--
 <html>
 	<head>
 		<title>Service Scheduling</title>
@@ -20,7 +436,7 @@
 		
 	</body>
 </html>
-
+-->
 <!--
 <html>
 <head>
