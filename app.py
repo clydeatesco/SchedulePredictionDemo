@@ -10,7 +10,7 @@ def home():
 	return render_template('index.html')
 
 @app.route('/serviceduration')
-def home():
+def serviceduration():
 	return render_template('prototype.html')
 
 @app.route('/main')
