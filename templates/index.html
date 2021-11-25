@@ -203,7 +203,8 @@ input[type=text] {
 					// html += `<td>${src}</td>`;
 					// html += `<td>${dst}</td>`;				
 
-					const proxyurl = "https://corsanywhere.herokuapp.com/";
+					//const proxyurl = "https://corsanywhere.herokuapp.com/";
+					const proxyurl = "";
 					const url = 'https://maps.googleapis.com/maps/api/distancematrix/json?origins='+src+'&destinations='+dst+'&key=AIzaSyAwUCVZYXQd8KbN5EcxxLC1UuM3naKt0X8';
 					let result = [];
 					await fetch(proxyurl+url)
